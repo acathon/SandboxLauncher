@@ -18,6 +18,9 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
     - name: Setup .NET 8
       uses: actions/setup-dotnet@v4
       with:
@@ -27,7 +30,16 @@ jobs:
       run: dotnet restore SandboxLauncher/SandboxLauncher.csproj -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }}
 
     - name: Build (Release ${{ matrix.platform }})
-      run: dotnet build SandboxLauncher/SandboxLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }}
+      run: |
+        $ErrorActionPreference = "Continue"
+        dotnet build SandboxLauncher/SandboxLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }} -v normal 2>&1 | Tee-Object -FilePath build.log
+        if ($LASTEXITCODE -ne 0) {
+          "### Build Failed (Exit code: $LASTEXITCODE)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "```" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          Get-Content build.log | Select-String -Pattern "error|failed|MSB" -Context 3,3 | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "```" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          exit $LASTEXITCODE
+        }
 
     - name: Publish (self-contained)
       run: >
@@ -45,3 +57,10 @@ jobs:
         name: SandboxLauncher-win-${{ matrix.platform }}
         path: publish/
         retention-days: 30
+
+    - name: Upload build log on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-log-${{ matrix.platform }}
+        path: build.log
