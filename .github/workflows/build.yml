@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -32,26 +35,16 @@ jobs:
     - name: Build (Release ${{ matrix.platform }})
       shell: cmd
       run: |
-        dotnet build SandboxLauncher\SandboxLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }}
-        if errorlevel 1 exit /b 1
+        dotnet build SandboxLauncher\SandboxLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }} -v normal > build.log 2>&1
 
-    - name: Publish (self-contained)
-      shell: cmd
+    - name: Push build log to branch
+      if: always()
       run: |
-        dotnet publish SandboxLauncher\SandboxLauncher.csproj -f net8.0-windows10.0.19041.0 -c Release -r win-${{ matrix.platform }} --self-contained true -p:Platform=${{ matrix.platform }} -p:PublishSingleFile=false
-        if errorlevel 1 exit /b 1
-        dir /s /b SandboxLauncher.exe
-
-    - name: Stage Artifact
-      shell: cmd
-      run: |
-        mkdir artifact-output
-        xcopy /s /y /i SandboxLauncher\bin\${{ matrix.platform }}\Release\net8.0-windows10.0.19041.0\win-${{ matrix.platform }}\publish\* artifact-output\
-        dir artifact-output
-
-    - name: Upload build artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: SandboxLauncher-win-${{ matrix.platform }}
-        path: artifact-output/
-        retention-days: 30
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git checkout -B build-logs
+        if (Test-Path "build.log") {
+          git add -f build.log
+          git commit -m "CI build log"
+          git push -f origin build-logs
+        }
