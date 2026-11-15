@@ -7,9 +7,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: windows-latest
@@ -33,18 +30,30 @@ jobs:
       run: dotnet restore SandboxLauncher/SandboxLauncher.csproj -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }}
 
     - name: Build (Release ${{ matrix.platform }})
-      shell: cmd
-      run: |
-        dotnet build SandboxLauncher\SandboxLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }} -v normal > build.log 2>&1
+      run: dotnet build SandboxLauncher/SandboxLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }}
 
-    - name: Push build log to branch
-      if: always()
+    - name: Publish (self-contained)
+      run: dotnet publish SandboxLauncher/SandboxLauncher.csproj -f net8.0-windows10.0.19041.0 -c Release -r win-${{ matrix.platform }} --self-contained true -p:Platform=${{ matrix.platform }} -p:PublishSingleFile=false
+
+    - name: Prepare Artifact
       run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git checkout -B build-logs
-        if (Test-Path "build.log") {
-          git add -f build.log
-          git commit -m "CI build log"
-          git push -f origin build-logs
+        $exe = Get-ChildItem -Path . -Recurse -Filter "SandboxLauncher.exe" | Where-Object { $_.FullName -like "*publish*" } | Select-Object -First 1
+        if (-not $exe) {
+          $exe = Get-ChildItem -Path . -Recurse -Filter "SandboxLauncher.exe" | Select-Object -First 1
         }
+        if (-not $exe) {
+          throw "Could not find SandboxLauncher.exe after publish!"
+        }
+        $publishDir = $exe.DirectoryName
+        Write-Host "Found SandboxLauncher.exe in: $publishDir"
+        New-Item -ItemType Directory -Force -Path artifact-output
+        Copy-Item -Path "$publishDir\*" -Destination artifact-output -Recurse -Force
+        Write-Host "Artifact contents:"
+        Get-ChildItem -Path artifact-output | Select-Object Name, Length | Format-Table -AutoSize
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SandboxLauncher-win-${{ matrix.platform }}
+        path: artifact-output/
+        retention-days: 30
