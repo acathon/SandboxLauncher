@@ -1,10 +1,11 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Text;
+using Windows.UI.Text;
 using Windows.Storage.Pickers;
 using Windows.ApplicationModel.DataTransfer;
 using WinRT.Interop;
 using SandboxLauncher.Services;
+using System.IO;
 
 namespace SandboxLauncher;
 

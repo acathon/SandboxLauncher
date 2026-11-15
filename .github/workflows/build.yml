@@ -24,14 +24,10 @@ jobs:
         dotnet-version: 8.0.x
 
     - name: Restore
-      run: dotnet restore SandboxLauncher/SandboxLauncher.csproj
+      run: dotnet restore SandboxLauncher/SandboxLauncher.csproj -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }}
 
     - name: Build (Release ${{ matrix.platform }})
-      run: >
-        dotnet build SandboxLauncher/SandboxLauncher.csproj
-        -c Release
-        -p:Platform=${{ matrix.platform }}
-        --no-restore
+      run: dotnet build SandboxLauncher/SandboxLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }}
 
     - name: Publish (self-contained)
       run: >
