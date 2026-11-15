@@ -32,29 +32,19 @@ jobs:
     - name: Build (Release ${{ matrix.platform }})
       shell: cmd
       run: |
-        dotnet build SandboxLauncher\SandboxLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }} -v normal > "%GITHUB_WORKSPACE%\build.log" 2>&1
-        type "%GITHUB_WORKSPACE%\build.log"
+        dotnet build SandboxLauncher\SandboxLauncher.csproj -c Release -p:Platform=${{ matrix.platform }} -r win-${{ matrix.platform }} -v normal
         if errorlevel 1 exit /b 1
 
     - name: Publish (self-contained)
       shell: cmd
       run: |
-        dotnet publish SandboxLauncher\SandboxLauncher.csproj -f net8.0-windows10.0.19041.0 -c Release -r win-${{ matrix.platform }} --self-contained true -p:Platform=${{ matrix.platform }} -p:PublishSingleFile=false -o "%GITHUB_WORKSPACE%\publish" > "%GITHUB_WORKSPACE%\publish.log" 2>&1
-        type "%GITHUB_WORKSPACE%\publish.log"
+        dotnet publish SandboxLauncher\SandboxLauncher.csproj -f net8.0-windows10.0.19041.0 -c Release -r win-${{ matrix.platform }} --self-contained true -p:Platform=${{ matrix.platform }} -p:PublishSingleFile=false -o publish
         if errorlevel 1 exit /b 1
+        dir publish
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
       with:
         name: SandboxLauncher-win-${{ matrix.platform }}
-        path: ${{ github.workspace }}\publish
+        path: publish/
         retention-days: 30
-
-    - name: Upload logs on failure
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: logs-${{ matrix.platform }}
-        path: |
-          ${{ github.workspace }}\build.log
-          ${{ github.workspace }}\publish.log
