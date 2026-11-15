@@ -1,0 +1,226 @@
+<Window
+    x:Class="SandboxLauncher.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Sandbox Launcher">
+    <Grid Background="{ThemeResource AppBackgroundBrush}" Padding="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ═══ Notification InfoBar ═══ -->
+        <InfoBar x:Name="NotificationBar" Grid.Row="0" IsOpen="False"
+                 Severity="Success" Title="Success" IsClosable="True"
+                 Margin="0,0,0,12"/>
+
+        <!-- ═══ Header ═══ -->
+        <Grid Grid.Row="1" Margin="0,0,0,24">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Sandbox Launcher" FontSize="28" FontWeight="SemiBold"/>
+                <TextBlock Text="Run untrusted applications in Windows Sandbox."
+                           Foreground="{ThemeResource MutedTextBrush}" FontSize="14"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══ Main two-column layout ═══ -->
+        <Grid Grid.Row="2" ColumnSpacing="20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.55*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ── Left: file selection + launch ── -->
+            <Border Grid.Column="0" Background="{ThemeResource CardBackgroundBrush}"
+                    CornerRadius="14" Padding="22"
+                    BorderBrush="{ThemeResource MutedTextBrush}" BorderThickness="1">
+                <StackPanel Spacing="16">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Application" FontSize="19" FontWeight="SemiBold"/>
+                        <TextBlock Text="Choose a file or drop it into the area below."
+                                   Foreground="{ThemeResource MutedTextBrush}"/>
+                    </StackPanel>
+
+                    <Border x:Name="DropZone" MinHeight="180" CornerRadius="12"
+                            BorderThickness="2" BorderBrush="#718096"
+                            Background="{ThemeResource AppBackgroundBrush}"
+                            AllowDrop="True" DragOver="DropZone_DragOver" Drop="DropZone_Drop">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                            <FontIcon Glyph="&#xE7C3;" FontSize="42"
+                                      Foreground="{ThemeResource AccentBrush}"/>
+                            <TextBlock Text="Drop an application here" FontSize="17" FontWeight="SemiBold"/>
+                            <TextBlock Text="EXE · MSI · BAT · CMD · PS1"
+                                       Foreground="{ThemeResource MutedTextBrush}"/>
+                            <Button Content="Browse files" Click="BrowseButton_Click"
+                                    Background="{ThemeResource AccentBrush}" Foreground="White"
+                                    Padding="20,9"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{ThemeResource AppBackgroundBrush}" CornerRadius="9" Padding="12">
+                        <StackPanel Spacing="5">
+                            <TextBlock Text="SELECTED FILE" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource MutedTextBrush}"/>
+                            <TextBlock x:Name="SelectedFileText" Text="No file selected"
+                                       TextTrimming="CharacterEllipsis" FontSize="14"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Startup command -->
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="STARTUP COMMAND (OPTIONAL)" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{ThemeResource MutedTextBrush}"/>
+                        <TextBox x:Name="StartupCommandBox"
+                                 PlaceholderText="Runs inside the sandbox after the file launches"
+                                 TextWrapping="Wrap" MinHeight="38"/>
+                    </StackPanel>
+
+                    <Button x:Name="LaunchButton" Content="Launch in Windows Sandbox"
+                            Click="LaunchButton_Click" IsEnabled="False"
+                            HorizontalAlignment="Stretch" Padding="16,12"
+                            Background="{ThemeResource AccentBrush}" Foreground="White"
+                            FontSize="15" FontWeight="SemiBold"/>
+
+                    <!-- Open output folder (visible after launch) -->
+                    <Button x:Name="OpenOutputButton"
+                            Click="OpenOutputButton_Click" Visibility="Collapsed"
+                            HorizontalAlignment="Stretch" Padding="12,10" FontSize="13">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE838;" FontSize="16"/>
+                            <TextBlock Text="Open Output Folder"/>
+                        </StackPanel>
+                    </Button>
+
+                    <TextBlock x:Name="StatusText" Text="Ready"
+                               Foreground="{ThemeResource MutedTextBrush}" FontSize="12"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ── Right: profile + advanced settings ── -->
+            <Border Grid.Column="1" Background="{ThemeResource CardBackgroundBrush}"
+                    CornerRadius="14" Padding="22"
+                    BorderBrush="{ThemeResource MutedTextBrush}" BorderThickness="1">
+                <StackPanel Spacing="18">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Sandbox profile" FontSize="19" FontWeight="SemiBold"/>
+                        <TextBlock Text="Choose the capabilities available to the guest."
+                                   Foreground="{ThemeResource MutedTextBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <RadioButtons x:Name="ProfilePicker"
+                                  SelectionChanged="ProfilePicker_SelectionChanged"
+                                  SelectedIndex="0">
+                        <RadioButton Tag="Standard"  Content="Standard"/>
+                        <RadioButton Tag="Strict"    Content="Strict Isolation"/>
+                        <RadioButton Tag="Network"   Content="Network Enabled"/>
+                    </RadioButtons>
+
+                    <Border Background="{ThemeResource AppBackgroundBrush}" CornerRadius="9" Padding="14">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="PROFILE DETAILS" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource MutedTextBrush}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                <FontIcon Glyph="&#xE774;" FontSize="16"/>
+                                <TextBlock x:Name="NetworkDetail" Text="Networking: Enabled"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                <FontIcon Glyph="&#xE7F4;" FontSize="16"/>
+                                <TextBlock x:Name="GpuDetail" Text="Virtual GPU: Enabled"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                <FontIcon Glyph="&#xE8D7;" FontSize="16"/>
+                                <TextBlock Text="Source folder: Read-only"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="9">
+                                <FontIcon Glyph="&#xE8B7;" FontSize="16"/>
+                                <TextBlock Text="Output folder: Writable"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Advanced settings -->
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="ADVANCED SETTINGS" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{ThemeResource MutedTextBrush}"/>
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Memory limit" VerticalAlignment="Center"/>
+                                <TextBlock Text="Leave empty for automatic"
+                                           FontSize="11" Foreground="{ThemeResource MutedTextBrush}"/>
+                            </StackPanel>
+                            <NumberBox x:Name="MemoryBox" Grid.Column="1"
+                                       PlaceholderText="Auto" SpinButtonPlacementMode="Compact"
+                                       Minimum="512" Maximum="32768"
+                                       Width="130"/>
+                        </Grid>
+
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Audio input" VerticalAlignment="Center"/>
+                                <TextBlock Text="Pass microphone to sandbox"
+                                           FontSize="11" Foreground="{ThemeResource MutedTextBrush}"/>
+                            </StackPanel>
+                            <ToggleSwitch x:Name="AudioToggle" Grid.Column="1"
+                                          OnContent="On" OffContent="Off"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <TextBlock Text="Output files are saved to Desktop\SandboxOutput."
+                               TextWrapping="Wrap" Foreground="{ThemeResource MutedTextBrush}" FontSize="12"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ═══ Session History ═══ -->
+        <Expander Grid.Row="3" Margin="0,16,0,0"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Stretch"
+                  Header="Session History" IsExpanded="False">
+            <Grid MinHeight="100" MaxHeight="240">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Button x:Name="ClearHistoryButton" Content="Clear History"
+                        Click="ClearHistoryButton_Click"
+                        HorizontalAlignment="Right" Padding="12,4"
+                        FontSize="12" Margin="0,0,0,8"/>
+
+                <ListView x:Name="HistoryList" Grid.Row="1"
+                          SelectionMode="None"
+                          IsItemClickEnabled="True"
+                          ItemClick="HistoryList_ItemClick"/>
+
+                <TextBlock x:Name="EmptyHistoryText" Grid.Row="1"
+                           Text="No sessions yet. Launch a file to see history here."
+                           Foreground="{ThemeResource MutedTextBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </Expander>
+
+        <!-- ═══ Footer ═══ -->
+        <Grid Grid.Row="4" Margin="2,18,2,0">
+            <TextBlock Text="Windows Sandbox must be enabled in Windows Features."
+                       Foreground="{ThemeResource MutedTextBrush}" FontSize="12"/>
+            <TextBlock Text="V2 · Enhanced launcher" HorizontalAlignment="Right"
+                       Foreground="{ThemeResource MutedTextBrush}" FontSize="12"/>
+        </Grid>
+    </Grid>
+</Window>
