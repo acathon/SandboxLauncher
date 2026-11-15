@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Windows.UI.Text;
+using Microsoft.UI.Text;
 using Windows.Storage.Pickers;
 using Windows.ApplicationModel.DataTransfer;
 using WinRT.Interop;
@@ -212,7 +212,7 @@ public sealed partial class MainWindow : Window
             panel.Children.Add(new TextBlock
             {
                 Text = entry.FileName,
-                FontWeight = FontWeights.SemiBold,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                 FontSize = 14
             });
             panel.Children.Add(new TextBlock
