@@ -37,35 +37,24 @@ jobs:
         if errorlevel 1 exit /b 1
 
     - name: Publish (self-contained)
-      run: >
-        dotnet publish SandboxLauncher/SandboxLauncher.csproj
-        -c Release
-        -r win-${{ matrix.platform }}
-        --self-contained
-        -p:Platform=${{ matrix.platform }}
-        -p:PublishSingleFile=false
-        -o publish
+      shell: cmd
+      run: |
+        dotnet publish SandboxLauncher\SandboxLauncher.csproj -f net8.0-windows10.0.19041.0 -c Release -r win-${{ matrix.platform }} --self-contained true -p:Platform=${{ matrix.platform }} -p:PublishSingleFile=false -o "%GITHUB_WORKSPACE%\publish" > "%GITHUB_WORKSPACE%\publish.log" 2>&1
+        type "%GITHUB_WORKSPACE%\publish.log"
+        if errorlevel 1 exit /b 1
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
       with:
         name: SandboxLauncher-win-${{ matrix.platform }}
-        path: publish/
+        path: ${{ github.workspace }}\publish
         retention-days: 30
 
-    - name: Dump log to summary on failure
-      if: failure()
-      run: |
-        if (Test-Path "$env:GITHUB_WORKSPACE\build.log") {
-          "### Build Log Output" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          "```" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          Get-Content "$env:GITHUB_WORKSPACE\build.log" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-          "```" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
-        }
-
-    - name: Upload build log on failure
+    - name: Upload logs on failure
       if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: build-log-${{ matrix.platform }}
-        path: ${{ github.workspace }}\build.log
+        name: logs-${{ matrix.platform }}
+        path: |
+          ${{ github.workspace }}\build.log
+          ${{ github.workspace }}\publish.log
